@@ -16,7 +16,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
-public class Players{
+public class DWASearch {
     private static final Map<String, String> KEYWORD_TO_FILE = Map.of(
             "women 3m springboard",   "Women's 3m Springboard.json",
             "women 10m platform",     "Women's 10m Platform.json",
@@ -27,9 +27,6 @@ public class Players{
             "men 3m synchronised",    "Men's 3m Synchronised.json",
             "men 10m synchronised",   "Men's 10m Synchronised.json"
     );
-    public record Player(String lastname, String firstname, String gender, String country) {
-
-    }
     enum Command {
         PLAYERS,
         RESULT,
@@ -179,3 +176,4 @@ public class Players{
 
     }
 }
+

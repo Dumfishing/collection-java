@@ -54,7 +54,7 @@ mvn clean test
 
 ### 打包方式说明
 
-使用 `maven-shade-plugin` 把 Jackson 的 class 解压合并进同一个 jar，`Main-Class` 配置为 `com.dumfishing.dwasearch.Players`。
+使用 `maven-shade-plugin` 把 Jackson 的 class 解压合并进同一个 jar，`Main-Class` 配置为 `com.dumfishing.dwasearch.DWASearch`。
 
 不用 shade 时，普通 jar 里只有本项目自己的 class，运行会报 `NoClassDefFoundError: com/fasterxml/jackson/databind/ObjectMapper`。
 
@@ -135,7 +135,7 @@ java -cp target/classes com.dumfishing.dwasearch.FetchData
 
 | 指令 | 输出 |
 |---|---|
-| `players` | 全部 89 名选手：全名、性别、国籍；按**国籍升序 → 姓氏升序** |
+| `DWASearch` | 全部 89 名选手：全名、性别、国籍；按**国籍升序 → 姓氏升序** |
 | `result <项目>` | 该项目**决赛**成绩：选手姓名、排名、各跳得分 ` + ` 连接、`=` 后接总分；按排名升序 |
 | 无法识别的命令 | `Error` |
 | 识别为 `result` 但项目缺失/不在列表/尾部多字符 | `N/A` |
@@ -159,22 +159,45 @@ java -cp target/classes com.dumfishing.dwasearch.FetchData
 
 ## 4. 代码结构
 
+```
+src/main/java/com/dumfishing/dwasearch/
+├─ DWASearch.java     入口类（含 main）+ 全部查询/格式化逻辑
+├─ Player.java        数据模型（record：country / lastName / firstName / gender）
+└─ FetchData.java     抓取脚本（独立 main，不参与查询）
+
+src/test/java/com/dumfishing/dwasearch/
+├─ ClassifyTest.java          命令分类（5 个用例）
+└─ FormatPlayersTest.java     格式化/字段校验/决赛内容（5 个用例）
+```
+
 | 职责 | 位置 |
 |---|---|
 | 抓取数据 | `FetchData.java` 的 `fetch()` / `main()` |
-| 数据读取（选手） | `Players.loadPlayers()` |
-| 数据读取（比赛成绩） | `Players.formatEvent()` |
-| 字段校验 | `Players.requireText()`（缺字段抛 `IllegalStateException`） |
-| 命令分类 | `Players.classify()` → `Command` 枚举 |
-| 项目名 → 文件映射 | `Players.KEYWORD_TO_FILE`（常量 `Map`） |
-| 结果格式化 | `Players.formatPlayers()` / `Players.formatEvent()` |
-| 入口与文件读写 | `Players.main()` |
+| 数据读取（选手） | `DWASearch.loadPlayers()` |
+| 数据读取（比赛成绩） | `DWASearch.formatEvent()` |
+| 字段校验 | `DWASearch.requireText()`（缺字段抛 `IllegalStateException`） |
+| 命令分类 | `DWASearch.classify()` → `Command` 枚举 |
+| 项目名 → 文件映射 | `DWASearch.KEYWORD_TO_FILE`（常量 `Map`） |
+| 结果格式化 | `DWASearch.formatPlayers()` / `DWASearch.formatEvent()` |
+| 入口与文件读写 | `DWASearch.main()` |
 
 设计要点：
 
+- 入口类为 **`DWASearch.java`**，含 `public static void main(String[] args)`
 - 命令判断、查询、格式化都是**可独立调用的 `static` 方法**，测试不需要启动整个命令行程序
 - 格式化方法**不读文件、不写 `System.out`**，只接收数据、返回字符串 → 可直接断言
 - 数据异常一律 `throw`，由 `main` 统一捕获并转成退出码，不在业务方法里静默降级
+
+### 性能说明
+
+数据量很小（89 名选手 + 8 个项目），当前实现没有性能瓶颈，也没有引入缓存或并行：
+
+- 选手数据加载一次，`players` 指令重复出现时不再重复解析 JSON
+- 每个项目文件按需读取，单个 `result` 指令读取 1 个文件（约 30–55 KB）
+- 格式化使用 `StringBuilder` 单次拼接，避免大量临时字符串
+- 单次运行（9 条命令）实测 < 1 秒
+
+若数据量放大，可优化方向：项目文件解析结果按文件名缓存（`Map<String, List<...>>`），避免重复读取与解析；但这会增加内存占用与失效逻辑，当前规模下不划算。
 
 ---
 
@@ -186,14 +209,14 @@ java -cp target/classes com.dumfishing.dwasearch.FetchData
 
 | 测试类 | 用例数 | 覆盖 |
 |---|---|---|
-| `ClassifyTest` | 5 | `players` / `result <项目>` / `result` / `players extra` / `Players`（大小写敏感） |
+| `ClassifyTest` | 5 | 输入 `players` / `result <项目>` / `result` / `players extra` / `Players`（大小写敏感） |
 | `FormatPlayersTest` | 5 | 单人输出格式、空列表输出空串、缺字段抛异常、字段正常取值、决赛第一名内容断言 |
 
 关键断言示例：
 
 ```java
 assertEquals("Full Name:COLE Ellie\nGender:Female\nCountry:Australia\n-----\n",
-             Players.formatPlayers(list));
+             DWASearch.formatPlayers(list));
 ```
 
 端到端验证（人工，每次改动后执行）：用包含 9 条命令的 `input.txt` 运行，输出固定为 **386 行**（89 位选手 + 4 条决赛 + 4 个 `Error` + 3 个 `N/A`，另含 100 条分隔线）。
@@ -218,3 +241,5 @@ Reason: missing 'TotalPoints' in Women's 3m Springboard.json
 ```
 
 不写默认成绩、不输出空结果。
+
+

@@ -7,26 +7,27 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class ClassifyTest {
     @Test
     void players() {
-        assertEquals(Players.Command.PLAYERS, Players.classify("players"));
+        assertEquals(DWASearch.Command.PLAYERS, DWASearch.classify("players"));
     }
 
     @Test
     void resultWithName() {
-        assertEquals(Players.Command.RESULT, Players.classify("result women 3m springboard"));
+        assertEquals(DWASearch.Command.RESULT, DWASearch.classify("result women 3m springboard"));
     }
 
     @Test
     void bareResult() {
-        assertEquals(Players.Command.RESULT_NO_NAME, Players.classify("result"));
+        assertEquals(DWASearch.Command.RESULT_NO_NAME, DWASearch.classify("result"));
     }
 
     @Test
     void playersExtraIsUnknown() {
-        assertEquals(Players.Command.UNKNOWN, Players.classify("players extra"));
+        assertEquals(DWASearch.Command.UNKNOWN, DWASearch.classify("players extra"));
     }
 
     @Test
     void capitalIsUnknown() {
-        assertEquals(Players.Command.UNKNOWN, Players.classify("Players"));
+        assertEquals(DWASearch.Command.UNKNOWN, DWASearch.classify("Players"));
     }
 }
+

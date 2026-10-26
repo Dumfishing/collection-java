@@ -17,17 +17,17 @@ class FormatPlayersTest {
     @Test
     @DisplayName("单个选手输出四行")
     void singlePlayerGivesFourLines() {
-        List<Players.Player> list = List.of(
-                new Players.Player("COLE", "Ellie", "Female", "Australia")
+        List<Player> list = List.of(
+                new Player("COLE", "Ellie", "Female", "Australia")
         );
         @SuppressWarnings("TextBlockMigration") String expected = "Full Name:COLE Ellie\n" + "Gender:Female\n" + "Country:Australia\n" + "-----\n";
-        assertEquals(expected, Players.formatPlayers(list));
+        assertEquals(expected, DWASearch.formatPlayers(list));
     }
 
     @Test
     @DisplayName("空列表输出空字符串")
     void emptyListGivesEmptyString() {
-        assertEquals("", Players.formatPlayers(List.of()));
+        assertEquals("", DWASearch.formatPlayers(List.of()));
     }
 
     @Test
@@ -35,13 +35,13 @@ class FormatPlayersTest {
     void missingFieldThrows() throws Exception {
         ObjectMapper om = new ObjectMapper();
         JsonNode node = om.readTree("{\"Rank\":1}");
-        assertThrows(IllegalStateException.class, () -> Players.requireText(node, "FullName", "test.json"));
+        assertThrows(IllegalStateException.class, () -> DWASearch.requireText(node, "FullName", "test.json"));
     }
 
     @Test
     @DisplayName("决赛第一名是陈佳")
     void firstPlaceIsChenJia() throws Exception {
-        String out = Players.formatEvent(new ObjectMapper(), "Women's 3m Springboard.json");
+        String out = DWASearch.formatEvent(new ObjectMapper(), "Women's 3m Springboard.json");
         assertTrue(out.startsWith("Full Name:CHEN Jia\nRank:1\nScore:73.50 + "));
     }
 
@@ -50,7 +50,9 @@ class FormatPlayersTest {
     void requireTextReturnsValue() throws IOException {
         ObjectMapper om = new ObjectMapper();
         JsonNode node = om.readTree("{\"Rank\":1,\"FullName\":\"CHEN Jia\"}");
-        String actual = Players.requireText(node, "FullName", "test.json");
+        String actual = DWASearch.requireText(node, "FullName", "test.json");
         assertEquals("CHEN Jia", actual);
     }
 }
+
+
