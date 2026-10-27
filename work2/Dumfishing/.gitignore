@@ -43,3 +43,8 @@ build/
 
 ### Mac OS ###
 .DS_Store
+# 本地试跑产物
+q.txt
+r.txt
+my-query.txt
+my-result.txt
